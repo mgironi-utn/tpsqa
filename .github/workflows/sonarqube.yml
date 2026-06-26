@@ -1,0 +1,49 @@
+name: SonarQube Analysis
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  sonar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pylint pytest pytest-cov bandit sonar-scanner
+
+      - name: Run pylint
+        run: |
+          pylint proximity_detector.py test_integration.py --output-format=parseable > pylint-report.txt 2>&1 || true
+        continue-on-error: true
+
+      - name: Run pytest with coverage
+        run: |
+          pytest --cov=. --cov-report=xml 2> coverage.log || true
+        continue-on-error: true
+
+      - name: Run bandit
+        run: |
+          bandit -r . -f json -o bandit-report.json || true
+        continue-on-error: true
+
+      - name: Run SonarQube scan
+        env:
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_LOGIN: ${{ secrets.SONAR_LOGIN }}
+        run: |
+          sonar-scanner -Dsonar.projectBaseDir=. -Dsonar.sources=. -Dsonar.exclusions=test_*.py
