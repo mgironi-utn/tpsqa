@@ -16,7 +16,7 @@ fi
 
 echo "Running pylint..."
 if command -v pylint &> /dev/null; then
-  pylint proximity_detector.py test_integration.py --output-format=parseable > pylint-report.txt 2>&1 || true
+  pylint src/proximity_detector.py test/test_integration.py --output-format=parseable > pylint-report.txt 2>&1 || true
   echo "Generated pylint-report.txt"
 else
   echo "pylint not installed; skipping pylint report"
@@ -30,17 +30,12 @@ else
   echo "pytest not installed; skipping coverage report"
 fi
 
-SONAR_HOST_URL=${SONAR_HOST_URL:-http://localhost:9000}
-SONAR_TOKEN=${SONAR_TOKEN:-sqa_393252ea720ef02413c509e2512e91a10335a527}
-
 if [ "$SONAR_AVAILABLE" = true ]; then
-  echo "Running SonarQube scanner against $SONAR_HOST_URL..."
+  echo "Running SonarQube scanner against sonar-project.properties with sonar.host.url defintion"
   sonar-scanner \
-    -Dsonar.host.url="$SONAR_HOST_URL" \
-    -Dsonar.login="$SONAR_TOKEN" \
     -Dsonar.projectBaseDir=. \
     -Dsonar.sources=. \
-    -Dsonar.exclusions=test_*.py
+    -Dsonar.exclusions=test/**,test_*.py
 else
   echo "Skipping SonarQube scanner (not installed)"
 fi

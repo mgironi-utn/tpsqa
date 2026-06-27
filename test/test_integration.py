@@ -1,6 +1,11 @@
 """Test and execution module for proximity detection."""
 
-from proximity_detector import detect_dangerous_proximity
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from src.proximity_detector import detect_dangerous_proximity
 
 
 if __name__ == "__main__":
