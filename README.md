@@ -1,6 +1,14 @@
 # tpsqa
 tp sqa de Ingenieria y calidad de sofware
 
+## Features
+
+- `predict_dangerous_proximity_from_timeseries`: estima velocidades angulares a partir de series temporales de posiciones (pares `timestamp`, `azimuth`), determina la dirección de órbita y genera las entradas necesarias para la detección. Reutiliza internamente `detect_dangerous_proximity` para obtener los pares en proximidad peligrosa.
+
+- `detect_dangerous_proximity`: detecta pares de objetos en proximidad peligrosa dadas entradas estáticas en el formato `(angular_velocity, azimuth, trajectory, orbit_height, volume, name)`. Puede usarse de forma independiente si ya se dispone de velocidades angulares y posiciones.
+
+Nota: `predict_dangerous_proximity_from_timeseries` y `detect_dangerous_proximity` son complementarias; la primera prepara y estima parámetros temporales y la segunda realiza la detección espacial.
+
 ## Cómo ejecutar desde cero
 
 ### Requisitos previos
