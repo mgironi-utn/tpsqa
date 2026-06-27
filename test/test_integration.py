@@ -1,6 +1,14 @@
 """Test and execution module for proximity detection."""
 
-from proximity_detector import detect_dangerous_proximity
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from src.proximity_detector import (
+    detect_dangerous_proximity,
+    predict_dangerous_proximity_from_timeseries,
+)
 
 
 if __name__ == "__main__":
@@ -15,3 +23,24 @@ if __name__ == "__main__":
     ]
     threats = detect_dangerous_proximity(sample_objects, proximity_meters=500.0)
     print(threats)
+
+    # --- Timeseries example: predict using timestamped azimuths ---
+    print("\nTimeseries prediction example:")
+    # positions: list of (timestamp, azimuth). Azimuth may be in degrees or radians.
+    objects_ts = [
+        (
+            "Satellite-A",
+            [(0.0, 0.0), (60.0, 0.0012), (120.0, 0.0024)],
+            400_000.0,
+            100.0,
+        ),
+        (
+            "Satellite-B",
+            [(0.0, 0.0005), (60.0, 0.0017), (120.0, 0.0029)],
+            400_000.0,
+            90.0,
+        ),
+    ]
+
+    predicted_threats = predict_dangerous_proximity_from_timeseries(objects_ts, proximity_meters=500.0)
+    print(predicted_threats)

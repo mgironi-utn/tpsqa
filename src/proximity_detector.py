@@ -93,3 +93,72 @@ def detect_dangerous_proximity(
                 )
 
     return dangerous_pairs
+
+
+def predict_dangerous_proximity_from_timeseries(
+    objects_timeseries: Iterable[Tuple[str, Iterable[Tuple[float, float]], float, float]],
+    proximity_meters: float,
+) -> List[Dict[str, Any]]:
+    """Estimate angular velocities from time-series azimuths and detect dangers.
+
+    Input per object: (name, positions, orbit_height, volume)
+      - positions: iterable of (timestamp, azimuth)
+        * timestamp: numeric (seconds or any consistent unit)
+        * azimuth: angle in radians or degrees (function will detect degrees if > 2*pi)
+
+    The function estimates angular velocity (radians per time unit) using a
+    simple linear regression on unwrapped angles and determines the
+    trajectory ('clock' for negative angular velocity, 'unclock' for positive).
+
+    Returns the same format as `detect_dangerous_proximity` by reusing it.
+    """
+    def _unwrap_angles(angles: List[float]) -> List[float]:
+        continuous: List[float] = [angles[0]]
+        prev = angles[0]
+        for a in angles[1:]:
+            delta = a - prev
+            while delta <= -math.pi:
+                delta += 2.0 * math.pi
+            while delta > math.pi:
+                delta -= 2.0 * math.pi
+            continuous.append(continuous[-1] + delta)
+            prev = a
+        return continuous
+
+    prepared: List[Tuple[float, float, str, float, float, str]] = []
+    for item in objects_timeseries:
+        # Accept both 4-tuples and explicit typing
+        try:
+            name, positions, height, volume = item
+        except Exception:
+            raise ValueError("Each entry must be (name, positions, orbit_height, volume)")
+
+        # materialize and sort positions by timestamp
+        pos_list = list(positions)
+        if len(pos_list) < 2:
+            raise ValueError(f"Need at least two timestamped positions for object '{name}'")
+        pos_list.sort(key=lambda p: p[0])
+        times = [float(t) for t, _ in pos_list]
+        raw_angles = [_to_radians(a) for _, a in pos_list]
+
+        continuous = _unwrap_angles(raw_angles)
+
+        # linear regression slope = covariance(t,angle) / var(t)
+        mean_t = sum(times) / len(times)
+        mean_a = sum(continuous) / len(continuous)
+        num = sum((t - mean_t) * (a - mean_a) for t, a in zip(times, continuous))
+        den = sum((t - mean_t) ** 2 for t in times)
+        if den == 0:
+            raise ValueError(f"Timestamps for object '{name}' must not all be equal")
+        slope = num / den
+
+        angular_velocity = abs(slope)
+        trajectory = "clock" if slope < 0.0 else "unclock"
+
+        # use the most recent reported azimuth as the reference position
+        reference_azimuth = raw_angles[-1]
+
+        prepared.append((angular_velocity, reference_azimuth, trajectory, float(height), float(volume), name))
+
+    # mark todo step completed
+    return detect_dangerous_proximity(prepared, proximity_meters)

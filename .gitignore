@@ -1,0 +1,5 @@
+.coverage
+coverage.log
+pylint-report.txt
+.scannerwork/**
+coverage.xml
