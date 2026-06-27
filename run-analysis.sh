@@ -31,8 +31,19 @@ else
 fi
 
 if [ "$SONAR_AVAILABLE" = true ]; then
-  echo "Running SonarQube scanner against sonar-project.properties with sonar.host.url defintion"
+  # Validar que las variables de ambiente estén definidas
+  if [ -z "$SONAR_HOST_URL" ] || [ -z "$SONAR_LOGIN" ]; then
+    echo "Error: Variables SONAR_HOST_URL y SONAR_LOGIN no están definidas"
+    echo "Configure las variables de ambiente:"
+    echo "  export SONAR_HOST_URL=http://localhost:9000"
+    echo "  export SONAR_LOGIN=<token_generado>"
+    exit 1
+  fi
+
+  echo "Running SonarQube scanner with SONAR_HOST_URL and SONAR_LOGIN"
   sonar-scanner \
+    -Dsonar.host.url="$SONAR_HOST_URL" \
+    -Dsonar.login="$SONAR_LOGIN" \
     -Dsonar.projectBaseDir=. \
     -Dsonar.sources=. \
     -Dsonar.exclusions=test/**,test_*.py
